@@ -1,0 +1,119 @@
+
+
+#include <iostream>
+
+using namespace std;
+
+struct Edge {
+    int from;
+    int to;
+    int weight;
+};
+
+struct Node {
+    int data;
+    Edge* edges;
+    int edgeCount;
+};
+
+struct Graph {
+    int numNodes;
+    Node* nodes;
+};
+
+void addNode(Graph* graph) {
+    cout << "Enter the number of persons: ";
+    cin >> graph->numNodes;
+    graph->nodes = new Node[graph->numNodes];
+    for (int i = 0; i < graph->numNodes; ++i) {
+        Node newNode;
+        newNode.data = i;
+        newNode.edges = nullptr;
+        newNode.edgeCount = 0;
+        graph->nodes[i] = newNode;
+    }
+}
+
+void addEdge(Graph* graph) {
+    for (int i = 0; i < graph->numNodes; ++i) {
+        for (int j = 0; j < graph->numNodes; ++j) {
+            if (i == j) continue;
+
+            cout << "Enter the amount Person " << i + 1 << " owes to Person " << j + 1 << " (0 if none): ";
+            int weight;
+            cin >> weight;
+
+            if (weight != 0) {
+                Edge newEdge;
+                newEdge.from = i;
+                newEdge.to = j;
+                newEdge.weight = weight;
+
+                Edge* newEdges = new Edge[graph->nodes[i].edgeCount + 1];
+                for (int k = 0; k < graph->nodes[i].edgeCount; ++k) {
+                    newEdges[k] = graph->nodes[i].edges[k];
+                }
+                delete[] graph->nodes[i].edges;
+
+                newEdges[graph->nodes[i].edgeCount++] = newEdge;
+                graph->nodes[i].edges = newEdges;
+            }
+        }
+    }
+}
+
+void min_cashflow(Graph* graph, int n) {
+    int* net_amount = new int[n]();
+    int initial = 0;
+    int minimized = 0;
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < graph->nodes[i].edgeCount; ++j) {
+            net_amount[i] += graph->nodes[i].edges[j].weight;
+            net_amount[graph->nodes[i].edges[j].to] -= graph->nodes[i].edges[j].weight;
+            initial++;
+        }
+    }
+    cout << "\n\nInitial transactions:" << initial << "\n\n";
+
+    while (true) {
+        int maxCreditor = 0, maxDebtor = 0;
+        for (int i = 1; i < n; ++i) {
+            if (net_amount[i] > net_amount[maxCreditor]) maxCreditor = i;
+            if (net_amount[i] < net_amount[maxDebtor]) maxDebtor = i;
+        }
+
+        if (net_amount[maxCreditor] == 0 && net_amount[maxDebtor] == 0)
+            break;
+
+        int minAmount = min(-net_amount[maxDebtor], net_amount[maxCreditor]);
+        net_amount[maxCreditor] -= minAmount;
+        net_amount[maxDebtor] += minAmount;
+
+        cout << "Person " << maxDebtor + 1 << " pays " << minAmount << " to Person " << maxCreditor + 1 << endl;
+        minimized++;
+    }
+    cout << "\n\nMinimized transactions:" << minimized << "\n\n";
+    delete[] net_amount;
+}
+
+int main() {
+    Graph graph;
+
+    // Add nodes (persons)
+    addNode(&graph);
+
+    // Add edges (debts)
+    addEdge(&graph);
+
+    // Calculate and minimize cash flow
+    min_cashflow(&graph, graph.numNodes);
+
+    // Clean up
+    for (int i = 0; i < graph.numNodes; ++i) {
+        delete[] graph.nodes[i].edges;
+    }
+    delete[] graph.nodes;
+
+    return 0;
+}
